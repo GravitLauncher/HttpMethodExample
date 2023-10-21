@@ -1,0 +1,18 @@
+{
+    "name": "gravita/http",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Gravita\\Http\\Config\\": "config/",
+            "Gravita\\Http\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Gravita",
+            "email": "12893402+gravit0@users.noreply.github.com"
+        }
+    ],
+    "require": {}
+}
