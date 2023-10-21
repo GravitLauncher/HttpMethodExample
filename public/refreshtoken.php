@@ -16,13 +16,13 @@ $refreshToken = $json["refreshToken"] ?? null;
 if (!$refreshToken) {
     (new Response())->message("Property refresh_token not found")->error_and_exit();
 }
+if(Utils::get_bearer_token() != Config::$bearerToken) {
+    (new Response())->message("Wrong bearer token")->error_and_exit();
+}
 $db = new Database();
 $session = UserSession::get_by_refresh_token($db, $refreshToken);
 if(!$session) {
     (new Response())->code(1002)->message("auth.invalidtoken")->error_and_exit();
-}
-if(Utils::get_bearer_token() != Config::$bearerToken) {
-    (new Response())->message("Wrong bearer token")->error_and_exit();
 }
 $session->refresh($db);
 Response::json_response_and_exit(200, [
