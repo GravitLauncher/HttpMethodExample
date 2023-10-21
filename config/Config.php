@@ -10,6 +10,7 @@ class Config
     public static $db = 'httpmethod'; // database name
     public static $user = 'httpmethod'; // user name
     public static $password = '1111'; // password
+    public static $bearerToken = "wyN3h4KPkQrmhANQJpjvsQJx3kkcpgxk"; // CHANGE IT(!)
     public static $sessionExpireSeconds = 60*60*1; // 1 hour
 
 

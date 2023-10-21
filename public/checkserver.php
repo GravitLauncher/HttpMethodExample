@@ -1,5 +1,6 @@
 <?php
 
+use Gravita\Http\Config\Config;
 use Gravita\Http\Database;
 use Gravita\Http\Response;
 use Gravita\Http\User;
@@ -19,6 +20,9 @@ if (!$username) {
 }
 if (!$serverId) {
     (new Response())->message("Property server_id not found")->error_and_exit();
+}
+if(Utils::get_bearer_token() != Config::$bearerToken) {
+    (new Response())->message("Wrong bearer token")->error_and_exit();
 }
 $db = new Database();
 $session = UserSession::get_by_server_id_and_username($db, $username, $serverId);
