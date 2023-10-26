@@ -1,4 +1,4 @@
-package pro.gravita.launcher.launchermodules.myhttp;
+package pro.gravit.launchermodules.myhttp;
 
 import pro.gravit.launcher.modules.LauncherInitContext;
 import pro.gravit.launcher.modules.LauncherModule;
@@ -6,7 +6,6 @@ import pro.gravit.launcher.modules.LauncherModuleInfo;
 import pro.gravit.launcher.modules.events.PreConfigPhase;
 import pro.gravit.launchserver.LaunchServer;
 import pro.gravit.launchserver.auth.core.AuthCoreProvider;
-import pro.gravit.launchserver.modules.impl.LaunchServerInitContext;
 import pro.gravit.utils.Version;
 
 public class MyHttpModule extends LauncherModule {

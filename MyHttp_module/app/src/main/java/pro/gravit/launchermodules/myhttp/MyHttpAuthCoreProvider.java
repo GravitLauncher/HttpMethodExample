@@ -1,4 +1,4 @@
-package pro.gravita.launcher.launchermodules.myhttp;
+package pro.gravit.launchermodules.myhttp;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
