@@ -21,10 +21,10 @@ if (!$username && !$uuid) {
     (new Response())->message("Property username or uuid not found")->error_and_exit();
 }
 if (!$serverId) {
-    (new Response())->message("Property server_id not found")->error_and_exit();
+    (new Response())->message("Property serverId not found")->error_and_exit();
 }
 if (!$accessToken) {
-    (new Response())->message("Property access_token not found")->error_and_exit();
+    (new Response())->message("Property accessToken not found")->error_and_exit();
 }
 if(Utils::get_bearer_token() != Config::$bearerToken) {
     (new Response())->message("Wrong bearer token")->error_and_exit();

@@ -40,6 +40,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
     public String userByUuid;
     public String refreshAccessToken;
     public String authorize;
+    public String userByToken;
     public String checkServer;
     public String joinServer;
     public String bearerToken;
@@ -86,7 +87,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
     public UserSession getUserSessionByOAuthAccessToken(String accessToken) throws OAuthAccessTokenExpired {
         HttpHelper.HttpOptional<MyHttpUserSession, HttpRequester.SimpleError> response;
         try {
-            response = requester.send(requester.post(userByUuid, new GetUserByAccessTokenRequest(accessToken), bearerToken),
+            response = requester.send(requester.post(userByToken, new GetUserByAccessTokenRequest(accessToken), bearerToken),
                     MyHttpUserSession.class);
         } catch (Throwable e) {
             logger.error("getUserSessionByOAuthAccessToken", e);
@@ -236,11 +237,11 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
 
         @Override
         public long getExpireIn() {
-            return expire;
+            return expire*1000L; // Seconds to milliseconds
         }
 
         public AuthManager.AuthReport toAuthReport() {
-            return new AuthManager.AuthReport(accessToken, accessToken, refreshToken, expire, this);
+            return new AuthManager.AuthReport(accessToken, accessToken, refreshToken, expire*1000L /* seconds to milliseconds */, this);
         }
     }
 

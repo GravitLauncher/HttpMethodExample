@@ -14,7 +14,7 @@ require_once(__DIR__ . '/../vendor/autoload.php');
 $json = Utils::read_json_input();
 $refreshToken = $json["refreshToken"] ?? null;
 if (!$refreshToken) {
-    (new Response())->message("Property refresh_token not found")->error_and_exit();
+    (new Response())->message("Property refreshToken not found")->error_and_exit();
 }
 if(Utils::get_bearer_token() != Config::$bearerToken) {
     (new Response())->message("Wrong bearer token")->error_and_exit();
