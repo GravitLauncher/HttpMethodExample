@@ -208,9 +208,9 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
 
     }
 
-    public record JoinServerRequest(String username, UUID uuid, String accessToken, String serverID) {}
+    public record JoinServerRequest(String username, UUID uuid, String accessToken, String serverId) {}
 
-    public record CheckServerRequest(String username, String serverID) {}
+    public record CheckServerRequest(String username, String serverId) {}
 
     public record AuthorizeRequest(String login, String password, String totpCode) {}
 
