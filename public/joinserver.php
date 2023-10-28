@@ -31,16 +31,17 @@ if(Utils::get_bearer_token() != Config::$bearerToken) {
 }
 $db = new Database();
 $session = null;
-if($uuid != null) {
-    $session = UserSession::get_by_server_id_and_uuid($db, $uuid, $serverId);
-} else {
-    $session = UserSession::get_by_server_id_and_username($db, $username, $serverId);
-}
+$session = UserSession::get_by_access_token_with_user($db, $accessToken);
 if(!$session) {
     (new Response())->message("session not found")->error_and_exit();
 }
 if($session->access_token !== $accessToken) {
-    (new Response())->message("access_token incorrect")->error_and_exit();
+    (new Response())->message("accessToken incorrect")->error_and_exit();
+}
+if($username && $session->user->username !== $username) {
+    (new Response())->message("username incorrect")->error_and_exit();
+} else if($uuid && $session->user->uuid !== $uuid) {
+    (new Response())->message("uuid incorrect")->error_and_exit();
 }
 $session->update_server_id($db, $serverId);
 Response::json_response_and_exit(200, []);

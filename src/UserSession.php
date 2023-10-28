@@ -77,7 +77,7 @@ class UserSession
         $stmt->execute(['id' => $id]);
         return UserSession::read_from_row($stmt->fetch(PDO::FETCH_ASSOC));
     }
- 
+
     public static function get_by_access_token_with_user(Database $db, $access_token): UserSession|null
     {
         $stmt = $db->getPDO()->prepare("SELECT user_sessions.id as session_id, users.id as id, username, uuid, access_token, refresh_token, server_id, expire_in, user_id, password FROM user_sessions JOIN users ON user_sessions.user_id=users.id WHERE access_token=:access_token");
