@@ -27,9 +27,9 @@ if(Utils::get_bearer_token() != Config::$bearerToken) {
 $db = new Database();
 $session = UserSession::get_by_server_id_and_username($db, $username, $serverId);
 if(!$session) {
-    Response::not_found_and_exit();
+    (new Response())->message("session not found")->error_and_exit();
 }
 if(!$session->server_id !== $serverId) {
-    (new Response())->message("server_id incorrect")->error_and_exit();
+    (new Response())->message("serverId incorrect")->error_and_exit();
 }
 Response::json_response_and_exit(200, $user->to_response());

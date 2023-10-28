@@ -37,7 +37,7 @@ if($uuid != null) {
     $session = UserSession::get_by_server_id_and_username($db, $username, $serverId);
 }
 if(!$session) {
-    Response::not_found_and_exit();
+    (new Response())->message("session not found")->error_and_exit();
 }
 if(!$session->access_token !== $accessToken) {
     (new Response())->message("access_token incorrect")->error_and_exit();
