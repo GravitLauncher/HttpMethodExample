@@ -39,7 +39,7 @@ if($uuid != null) {
 if(!$session) {
     (new Response())->message("session not found")->error_and_exit();
 }
-if(!$session->access_token !== $accessToken) {
+if($session->access_token !== $accessToken) {
     (new Response())->message("access_token incorrect")->error_and_exit();
 }
 $session->update_server_id($db, $serverId);
