@@ -11,6 +11,7 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 
 require_once(__DIR__ . '/../vendor/autoload.php');
+// xdebug_break();
 $uuid = $_GET["uuid"] ?? null;
 if (!$uuid) {
     (new Response())->message("Property uuid not found")->error_and_exit();

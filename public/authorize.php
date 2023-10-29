@@ -10,7 +10,7 @@ use Gravita\Http\Utils;
 ini_set('error_reporting', E_ALL); // FULL DEBUG 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-
+// xdebug_break();
 require_once(__DIR__ . '/../vendor/autoload.php');
 $json = Utils::read_json_input();
 $login = $json["login"] ?? null;

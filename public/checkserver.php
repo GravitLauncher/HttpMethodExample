@@ -12,6 +12,7 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 
 require_once(__DIR__ . '/../vendor/autoload.php');
+// xdebug_break();
 $json = Utils::read_json_input();
 $username = $json["username"] ?? null;
 $serverId = $json["serverId"] ?? null;
@@ -29,7 +30,7 @@ $session = UserSession::get_by_server_id_and_username($db, $username, $serverId)
 if(!$session) {
     (new Response())->message("session not found")->error_and_exit();
 }
-if(!$session->server_id !== $serverId) {
+if($session->server_id !== $serverId) {
     (new Response())->message("serverId incorrect")->error_and_exit();
 }
-Response::json_response_and_exit(200, $user->to_response());
+Response::json_response_and_exit(200, $session->user->to_response());

@@ -1,11 +1,18 @@
 package pro.gravit.launchermodules.myhttp;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import pro.gravit.launcher.ClientPermissions;
 import pro.gravit.launcher.events.request.GetAvailabilityAuthRequestEvent;
 import pro.gravit.launcher.profiles.Texture;
-import pro.gravit.launcher.request.RequestException;
 import pro.gravit.launcher.request.auth.AuthRequest;
 import pro.gravit.launcher.request.auth.details.AuthPasswordDetails;
 import pro.gravit.launcher.request.auth.details.AuthTotpDetails;
@@ -24,13 +31,6 @@ import pro.gravit.launchserver.helper.HttpHelper;
 import pro.gravit.launchserver.manangers.AuthManager;
 import pro.gravit.launchserver.socket.Client;
 import pro.gravit.launchserver.socket.response.auth.AuthResponse;
-
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 public class MyHttpAuthCoreProvider extends AuthCoreProvider {
     private static final int CODE_TOKEN_EXPIRED = 1001;
@@ -67,7 +67,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
     @Override
     public User getUserByUUID(UUID uuid) {
         try {
-            var response = requester.send(requester.get(userByUsername.replace("%uuid%", uuid.toString()), bearerToken),
+            var response = requester.send(requester.get(userByUuid.replace("%uuid%", uuid.toString()), bearerToken),
                     MyHttpUser.class);
             if(response.isSuccessful()) {
                 return response.result();
@@ -173,7 +173,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
             response = requester.send(requester.post(checkServer, new CheckServerRequest(username, serverID), bearerToken),
                     MyHttpUser.class);
         } catch (Throwable e) {
-            logger.error("refreshAccessToken", e);
+            logger.error("checkServer", e);
             throw new AuthException("Unexpected server error. Please contact administrator");
         }
         if(response.isSuccessful()) {
@@ -189,7 +189,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
             response = requester.send(requester.post(joinServer, new JoinServerRequest(username, uuid, accessToken, serverID), bearerToken),
                     Void.class);
         } catch (Throwable e) {
-            logger.error("refreshAccessToken", e);
+            logger.error("joinServer", e);
             throw new AuthException("Unexpected server error. Please contact administrator");
         }
         if(response.isSuccessful()) {

@@ -29,7 +29,7 @@ class UserSession
             "access_token" => $this->access_token,
             "refresh_token" => $this->refresh_token,
             "server_id" => $this->server_id,
-            "expire_in" => $this->expire_in
+            "expire_in" => $this->expire_in - time()
         ];
     }
  
@@ -67,7 +67,7 @@ class UserSession
             'expire_in' => $session->expire_in
         ]);
         $session->id = $db->getPDO()->lastInsertId();
-        $session->expire_in = (int) date("U", strtotime($session->expire_in));
+        $session->expire_in = (int) date("U", strtotime($session->expire_in)) - time();
         return $session;
     }
  
@@ -92,19 +92,23 @@ class UserSession
         return UserSession::read_from_row($stmt->fetch(PDO::FETCH_ASSOC));
     }
  
-    public static function get_by_server_id_and_username(Database $db, $server_id, $username): UserSession|null
+    public static function get_by_server_id_and_username(Database $db, $username, $server_id): UserSession|null
     {
-        $stmt = $db->getPDO()->prepare("SELECT user_sessions.id as session_id, users.id as id, username, uuid, access_token, refresh_token, server_id, expire_in, user_id, password FROM user_sessions JOIN users ON user_sessions.user_id = users.id  WHERE server_id=:server_id AND username=:username");
+        $stmt = $db->getPDO()->prepare(
+        "SELECT user_sessions.id as session_id, users.id as id, username, uuid, access_token, refresh_token, server_id, expire_in, user_id, password
+        FROM user_sessions JOIN users ON user_sessions.user_id = users.id
+        WHERE server_id=:server_id AND users.username=:username");
         $stmt->execute(['server_id' => $server_id, 'username' => $username]);
         return UserSession::read_from_row($stmt->fetch(PDO::FETCH_ASSOC), true);
     }
  
-    public static function get_by_server_id_and_uuid(Database $db, $server_id, $uuid): UserSession|null
+    public static function get_by_server_id_and_uuid(Database $db, $uuid, $server_id): UserSession|null
     {
         $stmt = $db->getPDO()->prepare(
             "SELECT user_sessions.id as session_id, users.id as id, username, uuid, access_token, refresh_token, server_id, expire_in, user_id, password
             FROM user_sessions
-            JOIN users ON user_sessions.user_id = users.id  WHERE server_id=:server_id AND uuid=:uuid"
+            JOIN users ON user_sessions.user_id = users.id
+            WHERE server_id=:server_id AND users.uuid=:uuid"
         );
         $stmt->execute(['server_id' => $server_id, 'uuid' => $uuid]);
         return UserSession::read_from_row($stmt->fetch(PDO::FETCH_ASSOC), true);

@@ -11,6 +11,7 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 
 require_once(__DIR__ . '/../vendor/autoload.php');
+// xdebug_break();
 $json = Utils::read_json_input();
 $refreshToken = $json["refreshToken"] ?? null;
 if (!$refreshToken) {
