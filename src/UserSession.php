@@ -67,7 +67,7 @@ class UserSession
             'expire_in' => $session->expire_in
         ]);
         $session->id = $db->getPDO()->lastInsertId();
-        $session->expire_in = (int) date("U", strtotime($session->expire_in)) - time();
+        $session->expire_in = (int) date("U", strtotime($session->expire_in));
         return $session;
     }
  
