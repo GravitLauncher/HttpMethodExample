@@ -30,5 +30,5 @@ Response::json_response_and_exit(200, [
     "accessToken" => $session->access_token,
     "refreshToken" => $session->refresh_token,
     "id" => $session->id,
-    "expire" => $session->expire_in
+    "expire" => $session->expire_in - time()
 ]);
