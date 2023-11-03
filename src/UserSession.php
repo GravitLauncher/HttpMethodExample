@@ -35,11 +35,12 @@ class UserSession
  
     public function refresh(Database $db)
     {
-        $stmt = $db->getPDO()->prepare("UPDATE user_sessions SET access_token=:access_token, refresh_token=:refresh_token WHERE id=:id");
+        $stmt = $db->getPDO()->prepare("UPDATE user_sessions SET access_token=:access_token, refresh_token=:refresh_token, expire_in=:expire_in WHERE id=:id");
         $stmt->execute([
             'id' => $this->id,
             'access_token' => $this->access_token = Utils::generate_token(),
-            'refresh_token' => $this->refresh_token = Utils::generate_token()
+            'refresh_token' => $this->refresh_token = Utils::generate_token(),
+            'expire_in' => $this->expire_in = time() + Config::$sessionExpireSeconds
         ]);
     }
  
