@@ -1,17 +1,23 @@
 package pro.gravit.launchermodules.myhttp;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+import com.google.gson.reflect.TypeToken;
+import com.sun.source.tree.BreakTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import pro.gravit.launcher.ClientPermissions;
 import pro.gravit.launcher.events.request.GetAvailabilityAuthRequestEvent;
+import pro.gravit.launcher.profiles.ClientProfile;
 import pro.gravit.launcher.profiles.Texture;
 import pro.gravit.launcher.request.auth.AuthRequest;
 import pro.gravit.launcher.request.auth.details.AuthPasswordDetails;
@@ -19,12 +25,16 @@ import pro.gravit.launcher.request.auth.details.AuthTotpDetails;
 import pro.gravit.launcher.request.auth.password.Auth2FAPassword;
 import pro.gravit.launcher.request.auth.password.AuthPlainPassword;
 import pro.gravit.launcher.request.auth.password.AuthTOTPPassword;
+import pro.gravit.launcher.request.secure.HardwareReportRequest;
 import pro.gravit.launchserver.HttpRequester;
 import pro.gravit.launchserver.LaunchServer;
 import pro.gravit.launchserver.auth.AuthException;
 import pro.gravit.launchserver.auth.core.AuthCoreProvider;
 import pro.gravit.launchserver.auth.core.User;
 import pro.gravit.launchserver.auth.core.UserSession;
+import pro.gravit.launchserver.auth.core.interfaces.UserHardware;
+import pro.gravit.launchserver.auth.core.interfaces.provider.AuthSupportHardware;
+import pro.gravit.launchserver.auth.core.interfaces.user.UserSupportHardware;
 import pro.gravit.launchserver.auth.core.interfaces.user.UserSupportTextures;
 import pro.gravit.launchserver.auth.texture.JsonTextureProvider;
 import pro.gravit.launchserver.helper.HttpHelper;
@@ -32,7 +42,7 @@ import pro.gravit.launchserver.manangers.AuthManager;
 import pro.gravit.launchserver.socket.Client;
 import pro.gravit.launchserver.socket.response.auth.AuthResponse;
 
-public class MyHttpAuthCoreProvider extends AuthCoreProvider {
+public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupportHardware {
     private static final int CODE_TOKEN_EXPIRED = 1001;
     private static final int CODE_INVALID_REFRESH_TOKEN = 1002;
     private transient final Logger logger = LogManager.getLogger();
@@ -44,6 +54,16 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
     public String checkServer;
     public String joinServer;
     public String bearerToken;
+
+    public String getHardwareInfoByPublicKeyUrl;
+    public String getHardwareInfoByDataUrl;
+    public String getHardwareInfoByIdUrl;
+    public String createHardwareInfoUrl;
+    public String connectUserAndHardwareUrl;
+    public String addPublicKeyToHardwareInfoUrl;
+    public String getUsersByHardwareInfoUrl;
+    public String banHardwareUrl;
+    public String unbanHardwareUrl;
     private transient HttpRequester requester;
     @Override
     public User getUserByUsername(String username) {
@@ -208,6 +228,177 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
 
     }
 
+    @Override
+    public MyHttpUserHardware getHardwareInfoByPublicKey(byte[] publicKey) {
+        HttpHelper.HttpOptional<MyHttpUserHardware, HttpRequester.SimpleError> response = null;
+        try {
+            response = requester.send(requester.post(getHardwareInfoByPublicKeyUrl, new HardwareInfoRequest(publicKey), bearerToken), MyHttpUserHardware.class);
+        } catch (Throwable e) {
+            logger.error("getHardwareInfoByPublicKey", e);
+        }
+
+        if (response != null && response.isSuccessful()) {
+            MyHttpUserHardware userHardware = response.result();
+            logger.debug("Successfully got UserHardware {} by publicKey", userHardware.id);
+            return userHardware;
+        }
+
+        logger.debug("Something went wrong while getting UserHardware by publicKey");
+        // possible case, will be processed outside...
+        return null;
+    }
+
+    @Override
+    public MyHttpUserHardware getHardwareInfoByData(HardwareReportRequest.HardwareInfo info) {
+        HttpHelper.HttpOptional<MyHttpUserHardware, HttpRequester.SimpleError> response = null;
+        try {
+            response = requester.send(requester.post(getHardwareInfoByDataUrl, new HardwareInfoRequest(info), bearerToken), MyHttpUserHardware.class);
+        } catch (Throwable e) {
+            logger.error("getHardwareInfoByData", e);
+        }
+
+        if (response != null && response.isSuccessful()) {
+            MyHttpUserHardware userHardware = response.result();
+            logger.debug("Successfully got UserHardware {} by info", userHardware.id);
+            return userHardware;
+        }
+
+        logger.debug("Something went wrong while getting UserHardware by info");
+        // possible case, will be processed outside...
+        return null;
+    }
+
+    @Override
+    public MyHttpUserHardware getHardwareInfoById(String id) {
+        HttpHelper.HttpOptional<MyHttpUserHardware, HttpRequester.SimpleError> response = null;
+        try {
+            response = requester.send(requester.post(getHardwareInfoByIdUrl, new HardwareInfoRequest(id), bearerToken), MyHttpUserHardware.class);
+        } catch (Throwable e) {
+            logger.error("getHardwareInfoById", e);
+        }
+
+        if (response != null && response.isSuccessful()) {
+            MyHttpUserHardware userHardware = response.result();
+            logger.debug("Successfully got UserHardware by id {}", id);
+            return userHardware;
+        }
+
+        logger.debug("Something went wrong while getting UserHardware by id {}", id);
+        // possible case, will be processed outside...
+        return null;
+    }
+
+    @Override
+    public MyHttpUserHardware createHardwareInfo(HardwareReportRequest.HardwareInfo info, byte[] publicKey) {
+        HttpHelper.HttpOptional<MyHttpUserHardware, HttpRequester.SimpleError> response = null;
+        try {
+            response = requester.send(requester.post(createHardwareInfoUrl, new HardwareInfoRequest(info, publicKey), bearerToken), MyHttpUserHardware.class);
+        } catch (Throwable e) {
+            logger.error("createHardwareInfo", e);
+        }
+
+        if (response != null && response.isSuccessful()) {
+            MyHttpUserHardware userHardware = response.result();
+            logger.debug("Successfully created UserHardware, id {}", userHardware.getId());
+            return userHardware;
+        }
+
+        logger.debug("Something went wrong while creating UserHardware");
+
+        // shouldn't actually happen
+        throw new SecurityException("Please contact administrator");
+    }
+
+    @Override
+    public void connectUserAndHardware(UserSession userSession, UserHardware hardware) {
+        HttpHelper.HttpOptional<MyHttpSimpleResponse, HttpRequester.SimpleError> response = null;
+        try {
+            response = requester.send(requester.post(connectUserAndHardwareUrl, new UserHardwareRequest(hardware, userSession), bearerToken), MyHttpSimpleResponse.class);
+        } catch (Throwable e) {
+            logger.error("connectUserAndHardware", e);
+        }
+
+        if (response != null && response.isSuccessful()) {
+            logger.debug("Successfully connected user {} to hardware {}", userSession.getUser().getUUID(), hardware.getId());
+            return;
+        }
+
+        logger.debug("Something went wrong while connecting user {} to hardware {}", userSession.getUser().getUUID(), hardware.getId());
+    }
+
+    @Override
+    public void addPublicKeyToHardwareInfo(UserHardware hardware, byte[] publicKey) {
+        HttpHelper.HttpOptional<MyHttpSimpleResponse, HttpRequester.SimpleError> response = null;
+        try {
+            response = requester.send(requester.post(addPublicKeyToHardwareInfoUrl, new UserHardwareRequest(hardware, publicKey), bearerToken), MyHttpSimpleResponse.class);
+        } catch (Throwable e) {
+            logger.error("addPublicKeyToHardwareInfo", e);
+        }
+
+        if (response != null && response.isSuccessful()) {
+            logger.debug("Successfully connected user hardware {} to public key", hardware.getId());
+            return;
+        }
+
+        logger.debug("Something went wrong while connecting user hardware {} to public key", hardware.getId());
+    }
+
+    @Override
+    public Iterable<User> getUsersByHardwareInfo(UserHardware hardware) {
+        HttpHelper.HttpOptional<List<MyHttpUser>, HttpRequester.SimpleError> response = null;
+        try {
+            response = requester.send(requester.post(getUsersByHardwareInfoUrl, new UserHardwareRequest(hardware), bearerToken), (new TypeToken<List<MyHttpUser>>(){}).getType());
+        } catch (Throwable e) {
+            logger.error("getUsersByHardwareInfo", e);
+        }
+
+        if (response != null && response.isSuccessful()) {
+            logger.debug("Successfully got users by hardware info");
+            return response.result()
+                    .stream()
+                    .map(user -> (User) user)
+                    .toList();
+        }
+
+        logger.debug("Something went wrong while connecting user hardware {} to public key", hardware.getId());
+        // possible case, but it's better to return empty list from the backend to avoid debug message
+        return Collections.emptyList();
+    }
+
+    @Override
+    public void banHardware(UserHardware hardware) {
+        HttpHelper.HttpOptional<MyHttpSimpleResponse, HttpRequester.SimpleError> response = null;
+        try {
+            response = requester.send(requester.post(banHardwareUrl, new UserHardwareRequest(hardware), bearerToken), MyHttpSimpleResponse.class);
+        } catch (Throwable e) {
+            logger.error("banHardware", e);
+        }
+
+        if (response != null && response.isSuccessful()) {
+            logger.debug("Successfully banned hardware with id {}", hardware.getId());
+            return;
+        }
+
+        logger.debug("Something went wrong while bannind hardware with id {}", hardware.getId());
+    }
+
+    @Override
+    public void unbanHardware(UserHardware hardware) {
+        HttpHelper.HttpOptional<MyHttpSimpleResponse, HttpRequester.SimpleError> response = null;
+        try {
+            response = requester.send(requester.post(unbanHardwareUrl, new UserHardwareRequest(hardware), bearerToken), MyHttpSimpleResponse.class);
+        } catch (Throwable e) {
+            logger.error("unbanHardware", e);
+        }
+
+        if (response != null && response.isSuccessful()) {
+            logger.debug("Successfully banned hardware with id {}", hardware.getId());
+            return;
+        }
+
+        logger.debug("Something went wrong while bannind hardware with id {}", hardware.getId());
+    }
+
     public record JoinServerRequest(String username, UUID uuid, String accessToken, String serverId) {}
 
     public record CheckServerRequest(String username, String serverId) {}
@@ -217,6 +408,40 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
     public record RefreshTokenRequest(String refreshToken) {}
 
     public record GetUserByAccessTokenRequest(String accessToken) {}
+
+    public record HardwareInfoRequest(HardwareReportRequest.HardwareInfo info, byte[] publicKey, String id) {
+        HardwareInfoRequest(HardwareReportRequest.HardwareInfo info) {
+            this(info, null, null);
+        }
+
+        HardwareInfoRequest(byte[] publicKey) {
+            this(null, publicKey, null);
+        }
+
+        HardwareInfoRequest(String id) {
+            this(null, null, id);
+        }
+
+        HardwareInfoRequest(HardwareReportRequest.HardwareInfo info, byte[] publicKey) {
+            this(info, publicKey, null);
+        }
+    }
+
+    public record UserHardwareRequest(UserHardware hardware, UserSession userSession, byte[] publicKey) {
+        UserHardwareRequest(UserHardware hardware) {
+            this(hardware, null, null);
+        }
+
+        UserHardwareRequest(UserHardware hardware, byte[] publicKey) {
+            this(hardware, null, publicKey);
+        }
+
+        UserHardwareRequest(UserHardware hardware, UserSession userSession) {
+            this(hardware, userSession, null);
+        }
+    }
+
+
 
     public record MyHttpUserSession(String id, String accessToken, String refreshToken, int expire, MyHttpUser user) implements UserSession {
 
@@ -245,7 +470,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
         }
     }
 
-    public record MyHttpUser(String username, UUID uuid, List<String> permissions, List<String> roles, Map<String, JsonTextureProvider.JsonTexture> assets) implements User, UserSupportTextures {
+    public record MyHttpUser(String username, UUID uuid, List<String> permissions, List<String> roles, Map<String, JsonTextureProvider.JsonTexture> assets, boolean banned, UserHardware userHardware) implements User, UserSupportHardware, UserSupportTextures {
 
         @Override
         public String getUsername() {
@@ -260,6 +485,11 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
         @Override
         public ClientPermissions getPermissions() {
             return new ClientPermissions(roles, permissions);
+        }
+
+        @Override
+        public boolean isBanned() {
+            return banned;
         }
 
         @Override
@@ -284,5 +514,36 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider {
         public Map<String, Texture> getUserAssets() {
             return JsonTextureProvider.JsonTexture.convertMap(assets);
         }
+
+        @Override
+        public UserHardware getHardware() {
+            return userHardware;
+        }
+    }
+
+    public record MyHttpUserHardware(HardwareReportRequest.HardwareInfo hardwareInfo, byte[] publicKey, String id, boolean banned) implements UserHardware {
+
+        @Override
+        public HardwareReportRequest.HardwareInfo getHardwareInfo() {
+            return hardwareInfo;
+        }
+
+        @Override
+        public byte[] getPublicKey() {
+            return publicKey;
+        }
+
+        @Override
+        public String getId() {
+            return id;
+        }
+
+        @Override
+        public boolean isBanned() {
+            return banned;
+        }
+    }
+
+    public record MyHttpSimpleResponse(String message) {
     }
 }
