@@ -1,23 +1,19 @@
 package pro.gravit.launchermodules.myhttp;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import com.google.gson.reflect.TypeToken;
-import com.sun.source.tree.BreakTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import pro.gravit.launcher.ClientPermissions;
 import pro.gravit.launcher.events.request.GetAvailabilityAuthRequestEvent;
-import pro.gravit.launcher.profiles.ClientProfile;
 import pro.gravit.launcher.profiles.Texture;
 import pro.gravit.launcher.request.auth.AuthRequest;
 import pro.gravit.launcher.request.auth.details.AuthPasswordDetails;
@@ -34,7 +30,7 @@ import pro.gravit.launchserver.auth.core.User;
 import pro.gravit.launchserver.auth.core.UserSession;
 import pro.gravit.launchserver.auth.core.interfaces.UserHardware;
 import pro.gravit.launchserver.auth.core.interfaces.provider.AuthSupportHardware;
-import pro.gravit.launchserver.auth.core.interfaces.user.UserSupportHardware;
+import pro.gravit.launchserver.auth.core.interfaces.session.UserSessionSupportHardware;
 import pro.gravit.launchserver.auth.core.interfaces.user.UserSupportTextures;
 import pro.gravit.launchserver.auth.texture.JsonTextureProvider;
 import pro.gravit.launchserver.helper.HttpHelper;
@@ -443,7 +439,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
 
 
 
-    public record MyHttpUserSession(String id, String accessToken, String refreshToken, int expire, MyHttpUser user) implements UserSession {
+    public record MyHttpUserSession(String id, String accessToken, String refreshToken, int expire, MyHttpUser user, String hardwareId, UserHardware userHardware) implements UserSession, UserSessionSupportHardware {
 
         @Override
         public String getID() {
@@ -468,9 +464,19 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
         public AuthManager.AuthReport toAuthReport() {
             return new AuthManager.AuthReport(accessToken, accessToken, refreshToken, expire*1000L /* seconds to milliseconds */, this);
         }
+
+        @Override
+        public String getHardwareId() {
+            return hardwareId;
+        }
+
+        @Override
+        public UserHardware getHardware() {
+            return userHardware;
+        }
     }
 
-    public record MyHttpUser(String username, UUID uuid, List<String> permissions, List<String> roles, Map<String, JsonTextureProvider.JsonTexture> assets, boolean banned, UserHardware userHardware) implements User, UserSupportHardware, UserSupportTextures {
+    public record MyHttpUser(String username, UUID uuid, List<String> permissions, List<String> roles, Map<String, JsonTextureProvider.JsonTexture> assets, boolean banned, UserHardware userHardware) implements User, UserSupportTextures {
 
         @Override
         public String getUsername() {
@@ -513,11 +519,6 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
         @Override
         public Map<String, Texture> getUserAssets() {
             return JsonTextureProvider.JsonTexture.convertMap(assets);
-        }
-
-        @Override
-        public UserHardware getHardware() {
-            return userHardware;
         }
     }
 
