@@ -22,9 +22,9 @@ repositories {
 
 dependencies {
     // This dependency is used by the application.
-    implementation("pro.gravit.launcher:launcher-core:5.5.0-SNAPSHOT")
-    implementation("pro.gravit.launcher:launcher-ws-api:5.5.0-SNAPSHOT")
-    implementation("pro.gravit.launcher:launchserver-api:5.5.0-SNAPSHOT")
+    implementation("pro.gravit.launcher:launcher-core:5.5.3-SNAPSHOT")
+    implementation("pro.gravit.launcher:launcher-ws-api:5.5.3-SNAPSHOT")
+    implementation("pro.gravit.launcher:launchserver-api:5.5.3-SNAPSHOT")
     implementation("com.google.code.gson:gson:2.8.9")
     implementation("org.apache.logging.log4j:log4j-api:2.20.0")
 }

@@ -1,23 +1,19 @@
 package pro.gravit.launchermodules.myhttp;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import com.google.gson.reflect.TypeToken;
-import com.sun.source.tree.BreakTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import pro.gravit.launcher.ClientPermissions;
 import pro.gravit.launcher.events.request.GetAvailabilityAuthRequestEvent;
-import pro.gravit.launcher.profiles.ClientProfile;
 import pro.gravit.launcher.profiles.Texture;
 import pro.gravit.launcher.request.auth.AuthRequest;
 import pro.gravit.launcher.request.auth.details.AuthPasswordDetails;
@@ -34,7 +30,7 @@ import pro.gravit.launchserver.auth.core.User;
 import pro.gravit.launchserver.auth.core.UserSession;
 import pro.gravit.launchserver.auth.core.interfaces.UserHardware;
 import pro.gravit.launchserver.auth.core.interfaces.provider.AuthSupportHardware;
-import pro.gravit.launchserver.auth.core.interfaces.user.UserSupportHardware;
+import pro.gravit.launchserver.auth.core.interfaces.session.UserSessionSupportHardware;
 import pro.gravit.launchserver.auth.core.interfaces.user.UserSupportTextures;
 import pro.gravit.launchserver.auth.texture.JsonTextureProvider;
 import pro.gravit.launchserver.helper.HttpHelper;
@@ -237,14 +233,19 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
             logger.error("getHardwareInfoByPublicKey", e);
         }
 
-        if (response != null && response.isSuccessful()) {
+        if (response != null && response.statusCode() == 200) {
             MyHttpUserHardware userHardware = response.result();
             logger.debug("Successfully got UserHardware {} by publicKey", userHardware.id);
             return userHardware;
         }
 
+        // HTTP 204 meaning NO CONTENT, that usually means no data found, but request processed successfully
+        if (response != null && response.statusCode() == 204) {
+            logger.debug("UserHardware not found by publicKey");
+            return null;
+        }
+
         logger.debug("Something went wrong while getting UserHardware by publicKey");
-        // possible case, will be processed outside...
         return null;
     }
 
@@ -257,14 +258,19 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
             logger.error("getHardwareInfoByData", e);
         }
 
-        if (response != null && response.isSuccessful()) {
+        if (response != null && response.statusCode() == 200) {
             MyHttpUserHardware userHardware = response.result();
             logger.debug("Successfully got UserHardware {} by info", userHardware.id);
             return userHardware;
         }
 
+        // HTTP 204 meaning NO CONTENT, that usually means no data found, but request processed successfully
+        if (response != null && response.statusCode() == 204) {
+            logger.debug("UserHardware not found by publicKey");
+            return null;
+        }
+
         logger.debug("Something went wrong while getting UserHardware by info");
-        // possible case, will be processed outside...
         return null;
     }
 
@@ -277,14 +283,19 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
             logger.error("getHardwareInfoById", e);
         }
 
-        if (response != null && response.isSuccessful()) {
+        if (response != null && response.statusCode() == 200) {
             MyHttpUserHardware userHardware = response.result();
             logger.debug("Successfully got UserHardware by id {}", id);
             return userHardware;
         }
 
+        // HTTP 204 meaning NO CONTENT, that usually means no data found, but request processed successfully
+        if (response != null && response.statusCode() == 204) {
+            logger.debug("UserHardware not found by publicKey");
+            return null;
+        }
+
         logger.debug("Something went wrong while getting UserHardware by id {}", id);
-        // possible case, will be processed outside...
         return null;
     }
 
@@ -299,7 +310,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
 
         if (response != null && response.isSuccessful()) {
             MyHttpUserHardware userHardware = response.result();
-            logger.debug("Successfully created UserHardware, id {}", userHardware.getId());
+            logger.debug("Successfully created UserHardware");
             return userHardware;
         }
 
@@ -313,24 +324,24 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
     public void connectUserAndHardware(UserSession userSession, UserHardware hardware) {
         HttpHelper.HttpOptional<MyHttpSimpleResponse, HttpRequester.SimpleError> response = null;
         try {
-            response = requester.send(requester.post(connectUserAndHardwareUrl, new UserHardwareRequest(hardware, userSession), bearerToken), MyHttpSimpleResponse.class);
+            response = requester.send(requester.post(connectUserAndHardwareUrl, new UserHardwareRequest((MyHttpUserHardware) hardware, (MyHttpUserSession) userSession), bearerToken), MyHttpSimpleResponse.class);
         } catch (Throwable e) {
             logger.error("connectUserAndHardware", e);
         }
 
         if (response != null && response.isSuccessful()) {
-            logger.debug("Successfully connected user {} to hardware {}", userSession.getUser().getUUID(), hardware.getId());
+            logger.debug("Successfully connected user {} to hardware", userSession.getUser().getUUID());
             return;
         }
 
-        logger.debug("Something went wrong while connecting user {} to hardware {}", userSession.getUser().getUUID(), hardware.getId());
+        logger.debug("Something went wrong while connecting user {} to hardware", userSession.getUser().getUUID());
     }
 
     @Override
     public void addPublicKeyToHardwareInfo(UserHardware hardware, byte[] publicKey) {
         HttpHelper.HttpOptional<MyHttpSimpleResponse, HttpRequester.SimpleError> response = null;
         try {
-            response = requester.send(requester.post(addPublicKeyToHardwareInfoUrl, new UserHardwareRequest(hardware, publicKey), bearerToken), MyHttpSimpleResponse.class);
+            response = requester.send(requester.post(addPublicKeyToHardwareInfoUrl, new UserHardwareRequest((MyHttpUserHardware) hardware, publicKey), bearerToken), MyHttpSimpleResponse.class);
         } catch (Throwable e) {
             logger.error("addPublicKeyToHardwareInfo", e);
         }
@@ -347,7 +358,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
     public Iterable<User> getUsersByHardwareInfo(UserHardware hardware) {
         HttpHelper.HttpOptional<List<MyHttpUser>, HttpRequester.SimpleError> response = null;
         try {
-            response = requester.send(requester.post(getUsersByHardwareInfoUrl, new UserHardwareRequest(hardware), bearerToken), (new TypeToken<List<MyHttpUser>>(){}).getType());
+            response = requester.send(requester.post(getUsersByHardwareInfoUrl, new UserHardwareRequest((MyHttpUserHardware) hardware), bearerToken), (new TypeToken<List<MyHttpUser>>(){}).getType());
         } catch (Throwable e) {
             logger.error("getUsersByHardwareInfo", e);
         }
@@ -369,7 +380,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
     public void banHardware(UserHardware hardware) {
         HttpHelper.HttpOptional<MyHttpSimpleResponse, HttpRequester.SimpleError> response = null;
         try {
-            response = requester.send(requester.post(banHardwareUrl, new UserHardwareRequest(hardware), bearerToken), MyHttpSimpleResponse.class);
+            response = requester.send(requester.post(banHardwareUrl, new UserHardwareRequest((MyHttpUserHardware) hardware), bearerToken), MyHttpSimpleResponse.class);
         } catch (Throwable e) {
             logger.error("banHardware", e);
         }
@@ -386,7 +397,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
     public void unbanHardware(UserHardware hardware) {
         HttpHelper.HttpOptional<MyHttpSimpleResponse, HttpRequester.SimpleError> response = null;
         try {
-            response = requester.send(requester.post(unbanHardwareUrl, new UserHardwareRequest(hardware), bearerToken), MyHttpSimpleResponse.class);
+            response = requester.send(requester.post(unbanHardwareUrl, new UserHardwareRequest((MyHttpUserHardware) hardware), bearerToken), MyHttpSimpleResponse.class);
         } catch (Throwable e) {
             logger.error("unbanHardware", e);
         }
@@ -427,23 +438,23 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
         }
     }
 
-    public record UserHardwareRequest(UserHardware hardware, UserSession userSession, byte[] publicKey) {
-        UserHardwareRequest(UserHardware hardware) {
+    public record UserHardwareRequest(MyHttpUserHardware hardware, MyHttpUserSession userSession, byte[] publicKey) {
+        UserHardwareRequest(MyHttpUserHardware hardware) {
             this(hardware, null, null);
         }
 
-        UserHardwareRequest(UserHardware hardware, byte[] publicKey) {
+        UserHardwareRequest(MyHttpUserHardware hardware, byte[] publicKey) {
             this(hardware, null, publicKey);
         }
 
-        UserHardwareRequest(UserHardware hardware, UserSession userSession) {
+        UserHardwareRequest(MyHttpUserHardware hardware, MyHttpUserSession userSession) {
             this(hardware, userSession, null);
         }
     }
 
 
 
-    public record MyHttpUserSession(String id, String accessToken, String refreshToken, int expire, MyHttpUser user) implements UserSession {
+    public record MyHttpUserSession(String id, String accessToken, String refreshToken, int expire, MyHttpUser user, String hardwareId, UserHardware userHardware) implements UserSession, UserSessionSupportHardware {
 
         @Override
         public String getID() {
@@ -468,9 +479,19 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
         public AuthManager.AuthReport toAuthReport() {
             return new AuthManager.AuthReport(accessToken, accessToken, refreshToken, expire*1000L /* seconds to milliseconds */, this);
         }
+
+        @Override
+        public String getHardwareId() {
+            return hardwareId;
+        }
+
+        @Override
+        public UserHardware getHardware() {
+            return userHardware;
+        }
     }
 
-    public record MyHttpUser(String username, UUID uuid, List<String> permissions, List<String> roles, Map<String, JsonTextureProvider.JsonTexture> assets, boolean banned, UserHardware userHardware) implements User, UserSupportHardware, UserSupportTextures {
+    public record MyHttpUser(String username, UUID uuid, List<String> permissions, List<String> roles, Map<String, JsonTextureProvider.JsonTexture> assets, boolean banned, UserHardware userHardware) implements User, UserSupportTextures {
 
         @Override
         public String getUsername() {
@@ -513,11 +534,6 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
         @Override
         public Map<String, Texture> getUserAssets() {
             return JsonTextureProvider.JsonTexture.convertMap(assets);
-        }
-
-        @Override
-        public UserHardware getHardware() {
-            return userHardware;
         }
     }
 
