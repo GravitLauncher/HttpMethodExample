@@ -62,6 +62,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
     public String banHardwareUrl;
     public String unbanHardwareUrl;
     private transient HttpRequester requester;
+
     @Override
     public User getUserByUsername(String username) {
         try {
@@ -223,7 +224,6 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
 
     @Override
     public void close() {
-
     }
 
     @Override
@@ -280,7 +280,12 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
     public void connectUserAndHardware(UserSession userSession, UserHardware hardware) {
         HttpHelper.HttpOptional<MyHttpSimpleResponse, HttpRequester.SimpleError> response = null;
         try {
-            response = requester.send(requester.post(connectUserAndHardwareUrl, new UserHardwareRequest((MyHttpUserHardware) hardware, (MyHttpUserSession) userSession), bearerToken), MyHttpSimpleResponse.class);
+            String sessionid = userSession.getID();
+            logger.debug("Connecting user {} to hardware {}", sessionid, hardware.getId());
+            response = requester.send(
+                    requester.post(connectUserAndHardwareUrl, new UserHardwareRequest((MyHttpUserHardware) hardware, sessionid), bearerToken),
+                    MyHttpSimpleResponse.class
+            );
         } catch (Throwable e) {
             logger.error("connectUserAndHardware", e);
         }
@@ -359,11 +364,11 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
         }
 
         if (response != null && response.isSuccessful()) {
-            logger.debug("Successfully banned hardware with id {}", hardware.getId());
+            logger.debug("Successfully unbanned hardware with id {}", hardware.getId());
             return;
         }
 
-        logger.debug("Something went wrong while bannind hardware with id {}", hardware.getId());
+        logger.debug("Something went wrong while unbanning hardware with id {}", hardware.getId());
     }
 
     public record JoinServerRequest(String username, UUID uuid, String accessToken, String serverId) {}
@@ -394,24 +399,21 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
         }
     }
 
-    public record UserHardwareRequest(MyHttpUserHardware hardware, MyHttpUserSession userSession, byte[] publicKey) {
-        UserHardwareRequest(MyHttpUserHardware hardware) {
-            this(hardware, null, null);
+    public record UserHardwareRequest(MyHttpUserHardware hardware, MyHttpUserSession userSession, byte[] publicKey, String sessionID) {
+        public UserHardwareRequest(MyHttpUserHardware hardware) {
+            this(hardware, null, null, null);
         }
 
-        UserHardwareRequest(MyHttpUserHardware hardware, byte[] publicKey) {
-            this(hardware, null, publicKey);
+        public UserHardwareRequest(MyHttpUserHardware hardware, byte[] publicKey) {
+            this(hardware, null, publicKey, null);
         }
 
-        UserHardwareRequest(MyHttpUserHardware hardware, MyHttpUserSession userSession) {
-            this(hardware, userSession, null);
+        public UserHardwareRequest(MyHttpUserHardware hardware, String sessionID) {
+            this(hardware, null, null, sessionID);
         }
     }
 
-
-
     public record MyHttpUserSession(String id, String accessToken, String refreshToken, int expire, MyHttpUser user, String hardwareId, UserHardware userHardware) implements UserSession, UserSessionSupportHardware {
-
         @Override
         public String getID() {
             return id;
@@ -433,7 +435,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
         }
 
         public AuthManager.AuthReport toAuthReport() {
-            return new AuthManager.AuthReport(accessToken, accessToken, refreshToken, expire*1000L /* seconds to milliseconds */, this);
+            return new AuthManager.AuthReport(accessToken, accessToken, refreshToken, expire*1000L, this);
         }
 
         @Override
@@ -448,7 +450,6 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
     }
 
     public record MyHttpUser(String username, UUID uuid, List<String> permissions, List<String> roles, Map<String, JsonTextureProvider.JsonTexture> assets, boolean banned, UserHardware userHardware) implements User, UserSupportTextures {
-
         @Override
         public String getUsername() {
             return username;
@@ -494,7 +495,6 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
     }
 
     public record MyHttpUserHardware(HardwareInfo hardwareInfo, byte[] publicKey, String id, boolean banned) implements UserHardware {
-
         @Override
         public HardwareInfo getHardwareInfo() {
             return hardwareInfo;
@@ -516,8 +516,7 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
         }
     }
 
-    public record MyHttpSimpleResponse(String message) {
-    }
+    public record MyHttpSimpleResponse(String message) {}
 
     @Override
     public UserHardware getHardwareInfoByData(HardwareInfo info) {
@@ -534,9 +533,8 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
             return userHardware;
         }
 
-        // HTTP 204 meaning NO CONTENT, that usually means no data found, but request processed successfully
         if (response != null && response.statusCode() == 204) {
-            logger.debug("UserHardware not found by publicKey");
+            logger.debug("UserHardware not found by hardware info");
             return null;
         }
 
@@ -560,8 +558,6 @@ public class MyHttpAuthCoreProvider extends AuthCoreProvider implements AuthSupp
         }
 
         logger.debug("Something went wrong while creating UserHardware");
-
-        // shouldn't actually happen
         throw new SecurityException("Please contact administrator");
     }
 }
